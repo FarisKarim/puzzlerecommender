@@ -5,15 +5,12 @@ import chess.pgn
 from io import StringIO
 from dotenv import load_dotenv
 
-# Load environment variables
 load_dotenv()
 
-# Lichess API token and username
 LICHESS_API_TOKEN = os.getenv("LICHESS_API_TOKEN")
 USERNAME = "honorable_knight00"
 
 def import_game_to_lichess(pgn_text, token):
-    """Uploads a PGN to Lichess and returns the new Lichess game ID."""
     url = "https://lichess.org/api/import"
     headers = {
         "Authorization": f"Bearer {token}",
@@ -114,11 +111,11 @@ if __name__ == "__main__":
         print("❌ Game import failed. Exiting.")
         exit(1)
 
-    # 3. Wait 10 seconds for analysis
+    # sleep
     print("⏳ Waiting 10 seconds for analysis...")
     time.sleep(10)
 
-    # 4. Fetch analyzed PGN
+    # Fetch PGN w annotations
     print("📥 Fetching analyzed PGN with blunder comments...")
     pgn_analysis = fetch_annotated_pgn(game_id, LICHESS_API_TOKEN)
     
@@ -126,7 +123,7 @@ if __name__ == "__main__":
         print("❌ Failed to retrieve PGN analysis.")
         exit(1)
 
-    # 5. Extract blunders only by `honorable_knight00`
+    # get blunders
     blunders = extract_blunders_from_pgn(pgn_analysis, USERNAME)
 
     if blunders:
