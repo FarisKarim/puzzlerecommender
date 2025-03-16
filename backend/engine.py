@@ -57,7 +57,7 @@ def load_game_for_user(file_path, username):
         while True:
             game = chess.pgn.read_game(pgn)
             if not game:
-                break  # No more games in PGN
+                break 
             white_name = game.headers.get("White", "").lower()
             black_name = game.headers.get("Black", "").lower()
             if white_name == username.lower():
@@ -67,7 +67,6 @@ def load_game_for_user(file_path, username):
     return None, None
 
 if __name__ == "__main__":
-    # Adjust these as needed
     username = "honorable_knight00"
     pgn_file = "samplegame.pgn"
     blunder_threshold = 300
