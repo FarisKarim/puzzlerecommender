@@ -1,6 +1,8 @@
 require("dotenv").config();
 const ChessWebAPI = require("chess-web-api");
 const axios = require("axios");
+const { Chess } = require("chess.js");
+
 
 const chessAPI = new ChessWebAPI();
 const USERNAME = "honorable_knight00"; // Replace with your Chess.com username
@@ -29,7 +31,6 @@ async function getLatestGamePGN(username) {
 
         console.log(`📥 Fetching games from Chess.com archive: ${year}-${month}`);
 
-        // Fetch all games for the latest month
         const gamesResponse = await chessAPI.getPlayerCompleteMonthlyArchives(username, year, month);
         const games = gamesResponse.body.games;
 
@@ -88,15 +89,116 @@ async function fetchAnalyzedPGN(gameId) {
 }
 
 // ✅ Step 4: Extract blunders from PGN
-function extractBlundersFromPGN(pgnText) {
-    if (typeof pgnText !== "string") {
-        console.error("❌ Error: PGN data is not a string.");
+// function extractBlundersFromPGN(pgnText) {
+//     if (typeof pgnText !== "string") {
+//         console.error("❌ Error: PGN data is not a string.");
+//         return [];
+//     }
+
+//     const blunderPattern = /\{[^}]*Blunder[^}]*\}/g;
+//     return pgnText.match(blunderPattern) || [];
+// }
+
+
+// Get player color for specified player
+function getPlayerColor(jsonResponse, playerName) {
+    if (!jsonResponse.players || typeof jsonResponse.players !== "object") {
+        console.error("❌ Error: 'players' field is missing or invalid.");
+        return null;
+    }
+
+    return Object.keys(jsonResponse.players).find(
+        (color) => jsonResponse.players[color]?.name === playerName
+    );
+}
+
+function getBlunderPositions(jsonResponse, playerColor) {
+    if (!jsonResponse.moves || !jsonResponse.analysis) {
+        console.error("❌ Error: Missing 'moves' or 'analysis' fields.");
         return [];
     }
 
-    const blunderPattern = /\{[^}]*Blunder[^}]*\}/g;
-    return pgnText.match(blunderPattern) || [];
+    const chess = new Chess(); // Initialize chess game state
+    const movesArray = jsonResponse.moves.split(" ");
+    const blunderPositions = [];
+
+    console.log("🔍 Total Moves:", movesArray.length);
+    console.log("🔍 Analysis Length:", jsonResponse.analysis.length);
+
+    jsonResponse.analysis.forEach((entry, index) => {
+        // Ensure it's the player's move
+        const isPlayerMove = playerColor === "white" ? index % 2 === 0 : index % 2 === 1;
+        if (entry.judgment?.name === "Blunder" && isPlayerMove) {
+            console.log(`⚠️ Blunder Detected at Move Index: ${index}, Move: ${movesArray[index]}`);
+
+            // Reset board
+            chess.reset();
+
+            // Play all moves up to **before** the blunder move
+            for (let i = 0; i < index; i++) {
+                chess.move(movesArray[i]);
+            }
+
+            // Get FEN before blunder occurs
+            const fenBeforeBlunder = chess.fen();
+            const blunderMove = movesArray[index]; // The move that caused the blunder
+
+            // console.log(`♟️ FEN Before Blunder: ${fenBeforeBlunder}`);
+            // console.log(`📉 Best Move Suggested: ${entry.best || "N/A"}`);
+
+            blunderPositions.push({
+                move_number: Math.floor(index / 2) + 1, // Convert ply to move number
+                player: playerColor,
+                move: blunderMove,
+                fen_before: fenBeforeBlunder,
+                best_move: entry.best || null,
+                blunder_type: null // You need to classify this later
+            });
+
+            console.log("✅ Blunder Recorded:", blunderPositions[blunderPositions.length - 1]);
+        }
+
+        // Move the blunder move **after capturing FEN** so that future iterations have an updated board
+        if (movesArray[index]) {
+            chess.move(movesArray[index]);
+        }
+    });
+
+    console.log("\n📊 Final Extracted Blunder Positions:", JSON.stringify(blunderPositions, null, 2));
+    return blunderPositions;
 }
+
+function filterMoves(jsonResponse, playerColor) {
+    if (!jsonResponse.moves) {
+        console.error("❌ Error: 'moves' field is missing.");
+        return;
+    }
+
+    const movesArray = jsonResponse.moves.split(" ");
+    jsonResponse.moves = movesArray
+        .filter((_, index) => (playerColor === "white" ? index % 2 === 0 : index % 2 === 1))
+        .join(" ");
+}
+
+// function filterBlunders(jsonResponse, playerColor) {
+//     if (!jsonResponse.analysis || !Array.isArray(jsonResponse.analysis)) {
+//         console.error("❌ Error: 'analysis' field is missing or invalid.");
+//         return;
+//     }
+
+//     // Find the indexes of the player's moves
+//     const playerMoveIndexes = jsonResponse.analysis
+//         .map((_, index) => index)
+//         .filter((index) => (playerColor === "white" ? index % 2 === 0 : index % 2 === 1));
+
+//     // Filter analysis for only the player's blunders
+//     jsonResponse.analysis = jsonResponse.analysis.filter(
+//         (entry, index) =>
+//             playerMoveIndexes.includes(index) && entry.judgment?.name === "Blunder"
+//     );
+
+//     console.log("Filtered Analysis (Blunders Only):", JSON.stringify(jsonResponse.analysis, null, 2));
+// }
 
 // ✅ Run the process
 (async () => {
@@ -124,32 +226,33 @@ function extractBlundersFromPGN(pgnText) {
     const jsonResponse = JSON.parse(annotatedPGN);
     
     // Extract blunders needs a string. NEED TO CHANGE!
-    console.log("📥 Received Annotated PGN:", annotatedPGN); 
-    console.log(typeof jsonResponse);
+    // console.log("📥 Received Annotated PGN:", annotatedPGN); 
+    // console.log(typeof jsonResponse);
     // Find which color "honorable_knight00" played as
-    const playerColor = Object.keys(jsonResponse.players).find(
-        (color) => jsonResponse.players[color]?.name === "honorable_knight00"
-    );
+    const playerColor = getPlayerColor(jsonResponse, USERNAME);
 
     if (playerColor) {
         console.log(`🎯 Found 'honorable_knight00' as ${playerColor}`);
 
-        // Keep only "honorable_knight00" and remove the other player
-        jsonResponse.players = { [playerColor]: jsonResponse.players[playerColor] };
-
-        console.log("✅ Players after filtering:", JSON.stringify(jsonResponse.players, null, 2));
+        jsonResponse.players[playerColor].color = playerColor;
+        getBlunderPositions(jsonResponse, playerColor);
+        filterMoves(jsonResponse, playerColor);
+        console.log("♟️ Filtered moves for the player:", jsonResponse.moves);
+        // filterBlunders(jsonResponse, playerColor);
+        // console.log("♟️ Filtered analysis for the player:", jsonResponse.analysis);
     } else {
         console.error("❌ Error: 'honorable_knight00' not found in players.");
     }
 
-    const blunders = extractBlundersFromPGN(annotatedPGN);
 
-    if (blunders.length > 0) {
-        console.log(`🚨 Detected ${blunders.length} blunder(s):`);
-        blunders.forEach((blunder, index) => {
-            console.log(`${index + 1}. ${blunder}`);
-        });
-    } else {
-        console.log("✅ No blunders detected.");
-    }
+    // const blunders = extractBlundersFromPGN(annotatedPGN);
+
+    // if (blunders.length > 0) {
+    //     console.log(`🚨 Detected ${blunders.length} blunder(s):`);
+    //     blunders.forEach((blunder, index) => {
+    //         console.log(`${index + 1}. ${blunder}`);
+    //     });
+    // } else {
+    //     console.log("✅ No blunders detected.");
+    // }
 })();
