@@ -5,7 +5,7 @@ const { Chess } = require("chess.js");
 
 
 const chessAPI = new ChessWebAPI();
-const USERNAME = "honorable_knight00"; // Replace with your Chess.com username
+const USERNAME = "honorable_knight00";
 const LICHESS_API_TOKEN = process.env.LICHESS_API_TOKEN;
 
 if (!USERNAME || !LICHESS_API_TOKEN) {
@@ -13,7 +13,7 @@ if (!USERNAME || !LICHESS_API_TOKEN) {
     process.exit(1);
 }
 
-// ✅ Step 1: Get the latest available Chess.com game PGN
+// Get the latest available Chess.com game PGN
 async function getLatestGamePGN(username) {
     try {
         // Get the list of available archives (months with games)
@@ -39,14 +39,14 @@ async function getLatestGamePGN(username) {
             return null;
         }
 
-        return games[games.length - 1].pgn; // ✅ Returns PGN of the most recent game
+        return games[games.length - 1].pgn; // Returns PGN of the most recent game
     } catch (error) {
         console.error("❌ Error fetching Chess.com games:", error.message);
         return null;
     }
 }
 
-// ✅ Step 2: Upload the PGN to Lichess
+// Upload the PGN to Lichess
 async function importGameToLichess(pgn) {
     const url = "https://lichess.org/api/import";
     const headers = {
@@ -70,7 +70,7 @@ async function importGameToLichess(pgn) {
     }
 }
 
-// ✅ Step 3: Fetch the analyzed PGN from Lichess
+// Fetch the analyzed PGN from Lichess
 async function fetchAnalyzedPGN(gameId) {
     const url = `https://lichess.org/game/export/${gameId}?literate=1`;
     const headers = { "Authorization": `Bearer ${LICHESS_API_TOKEN}` };
@@ -79,16 +79,14 @@ async function fetchAnalyzedPGN(gameId) {
         const response = await axios.get(url, { headers, responseType: "text" });
 
         // json response
-        // console.log("📥 Received Annotated PGN:", response.data.slice(0, 500)); // Print first 500 chars
-
-        return response.data; // This is now a PGN string, not JSON
+        return response.data;
     } catch (error) {
         console.error("❌ Error fetching analyzed PGN:", error.message);
         return null;
     }
 }
 
-// ✅ Step 4: Extract blunders from PGN
+//  Extract blunders from PGN
 // function extractBlundersFromPGN(pgnText) {
 //     if (typeof pgnText !== "string") {
 //         console.error("❌ Error: PGN data is not a string.");
@@ -126,7 +124,6 @@ function getBlunderPositions(jsonResponse, playerColor) {
     console.log("🔍 Analysis Length:", jsonResponse.analysis.length);
 
     jsonResponse.analysis.forEach((entry, index) => {
-        // Ensure it's the player's move
         const isPlayerMove = playerColor === "white" ? index % 2 === 0 : index % 2 === 1;
         if (entry.judgment?.name === "Blunder" && isPlayerMove) {
             console.log(`⚠️ Blunder Detected at Move Index: ${index}, Move: ${movesArray[index]}`);
@@ -134,7 +131,7 @@ function getBlunderPositions(jsonResponse, playerColor) {
             // Reset board
             chess.reset();
 
-            // Play all moves up to **before** the blunder move
+            // Play all moves up to before the blunder move
             for (let i = 0; i < index; i++) {
                 chess.move(movesArray[i]);
             }
@@ -142,9 +139,6 @@ function getBlunderPositions(jsonResponse, playerColor) {
             // Get FEN before blunder occurs
             const fenBeforeBlunder = chess.fen();
             const blunderMove = movesArray[index]; // The move that caused the blunder
-
-            // console.log(`♟️ FEN Before Blunder: ${fenBeforeBlunder}`);
-            // console.log(`📉 Best Move Suggested: ${entry.best || "N/A"}`);
 
             blunderPositions.push({
                 move_number: Math.floor(index / 2) + 1, // Convert ply to move number
@@ -158,7 +152,7 @@ function getBlunderPositions(jsonResponse, playerColor) {
             console.log("✅ Blunder Recorded:", blunderPositions[blunderPositions.length - 1]);
         }
 
-        // Move the blunder move **after capturing FEN** so that future iterations have an updated board
+        // Move the blunder move after capturing FEN so that future iterations have an updated board
         if (movesArray[index]) {
             chess.move(movesArray[index]);
         }
