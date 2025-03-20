@@ -4,9 +4,10 @@ const ChessWebAPI = require("chess-web-api");
 const { Chess } = require("chess.js");
 const { spawn } = require("child_process");
 
-const USERNAME = "honorable_knight00"; // Replace if needed
+const USERNAME = "honorable_knight00";
 const LICHESS_API_TOKEN = process.env.LICHESS_API_TOKEN;
 const chessAPI = new ChessWebAPI();
+
 
 // 1) Fetch the most recent Chess.com PGN
 async function getLatestGamePGN(username) {
@@ -39,7 +40,7 @@ async function getLatestGamePGN(username) {
     }
 
     // Return PGN of the newest game
-    const latestGame = games[games.length - 4];
+    const latestGame = games[games.length - 1];
 
     return typeof latestGame.pgn === "string"
       ? latestGame.pgn
@@ -221,7 +222,7 @@ async function detectBlundersFromJson(gameJson, username) {
         });
       }
 
-      if (drop >= 300) {
+      if ((color === "w" && drop >= 300) || (color === "b" && drop <= -300)) {
         blunders.push({
           moveNumber: Math.floor(i / 2) + 1,
           move: move,
