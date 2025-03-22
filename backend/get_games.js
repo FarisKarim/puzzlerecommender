@@ -212,8 +212,8 @@ async function detectBlundersFromJson(gameJson, username) {
       );
       console.log(`   Eval Drop: ${drop} cp\n`);
       console.log(`   Best Move: ${beforeEval.bestMove}\n`);
-
-      if (beforeEval.foundMate && beforeEval.bestMove !== move) {
+      const playedUCI = result.from + result.to;
+      if (beforeEval.foundMate && beforeEval.bestMove !== playedUCI) {
         missedMates.push({
           moveNumber: Math.floor(i / 2) + 1,
           move,
