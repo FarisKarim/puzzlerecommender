@@ -1,3 +1,5 @@
 backend/venv
 backend/.env
 backend/lichess_db_puzzle.csv
+backend/v3.1.ipynb
+backend/models/chess_model.h5
