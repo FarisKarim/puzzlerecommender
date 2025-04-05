@@ -1,11 +1,8 @@
 backend/venv
 backend/.env
 backend/lichess_db_puzzle.csv
-backend/v3.1.ipynb
-backend/v4.ipynb
-backend/models/modelv2.h5
 .DS_Store
-backend/v4.ipynb
+backend/models/
 backend/.DS_Store
 **/.DS_Store
-backend/v4.ipynb
+backend/notebooks/
