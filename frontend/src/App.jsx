@@ -2,7 +2,14 @@ import { useState, useEffect, useCallback } from "react";
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import { useMemo } from "react";
-import Sidebar from "./components/Sidebar"; 
+import Sidebar from "./components/Sidebar";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function App() {
   const [dark, setDark] = useState(false);
@@ -15,6 +22,10 @@ export default function App() {
   const [sandboxGame, setSandboxGame] = useState(null);
   const [blunders, setBlunders] = useState([]);
   const [missedMates, setMissedMates] = useState([]);
+  const [gameList, setGameList] = useState([]);
+  const [gameType, setGameType] = useState("blitz"); // default to blitz
+  const [count, setCount] = useState(1);
+  const [selectedGameIndex, setSelectedGameIndex] = useState(0);
 
   const customSquareStyles = useMemo(() => {
     if (ply === 0) return {};
@@ -27,7 +38,7 @@ export default function App() {
 
     if (!move || !move.from || !move.to) return {};
     return {
-      [move.from]: { backgroundColor: "rgba(135, 206, 250, 0.6)" }, 
+      [move.from]: { backgroundColor: "rgba(135, 206, 250, 0.6)" },
       [move.to]: { backgroundColor: "rgba(30, 64, 175, 0.8)" },
     };
   }, [moves, ply]);
@@ -83,13 +94,22 @@ export default function App() {
     if (!username.trim()) return;
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:4000/api/analyze/${username}`);
+      const res = await fetch(
+        `http://localhost:4000/api/analyze/${username}?type=${gameType}&count=${count}`
+      );
       if (!res.ok) throw new Error("API error");
       const data = await res.json();
-      setMoves(data.moves);
-      setBlunders(data.blunders);
-      setMissedMates(data.missedMates);
-      setPly(data.moves.length);
+      if (!data || data.length === 0) {
+        alert("No game data found.");
+        return;
+      }
+      setGameList(data);
+      setSelectedGameIndex(0); // Default to first game
+      const firstGame = data[0];
+      setMoves(firstGame.moves);
+      setBlunders(firstGame.blunders);
+      setMissedMates(firstGame.missedMates);
+      setPly(firstGame.moves.length);
     } catch (err) {
       alert("Could not analyze game. See console.");
       console.error(err);
@@ -103,6 +123,24 @@ export default function App() {
       <nav className="flex items-center justify-between px-6 py-4 shadow-md bg-white dark:bg-neutral-800">
         <h1 className="text-xl font-bold tracking-wide">Blundery</h1>
         <div className="flex items-center gap-3">
+          <Select value={gameType} onValueChange={setGameType}>
+            <SelectTrigger className="w-[140px]">
+              <SelectValue placeholder="Select type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="blitz">Blitz</SelectItem>
+              <SelectItem value="rapid">Rapid</SelectItem>
+              <SelectItem value="bullet">Bullet</SelectItem>
+            </SelectContent>
+          </Select>
+          <input
+            type="number"
+            value={count}
+            onChange={(e) => setCount(Number(e.target.value))}
+            min={1}
+            max={20}
+          />
+
           <input
             type="text"
             placeholder="Chess.com username"
@@ -126,8 +164,8 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="flex-1 p-6">
-        <div className="relative mx-auto w-fit">
+      <main className="flex-1 flex justify-end p-6 gap-6">
+        <div className="relative w-fit">
           <section className="flex flex-col items-center gap-4">
             <div className="relative">
               <div className="absolute -left-3 top-0 h-full w-2 rounded bg-gradient-to-b from-green-500 via-gray-300 to-red-600" />
@@ -184,7 +222,35 @@ export default function App() {
             setOrientation={setOrientation}
             copyPgn={copyPgn}
           />
+
+         
         </div>
+        <div className="flex flex-col justify-start p-2 items-center w-52 gap-1">
+            {gameList.map((g, i) => {
+              const white = g.headers.players?.white?.name ?? "White";
+              const black = g.headers.players?.black?.name ?? "Black";
+              return (
+                <button
+                  key={i}
+                  className={`text-left p-2 w-full hover:scale-105 transition-transform h-14 text-sm rounded-lg border ${
+                    i === selectedGameIndex
+                      ? "bg-orange-600 text-white"
+                      : "bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                  }`}
+                  onClick={() => {
+                    setSelectedGameIndex(i);
+                    setMoves(g.moves);
+                    setBlunders(g.blunders);
+                    setMissedMates(g.missedMates);
+                    setPly(g.moves.length);
+                    setSandboxGame(null);
+                  }}
+                >
+                  {white} vs {black}
+                </button>
+              );
+            })}
+          </div>
       </main>
 
       <footer className="text-center py-4 text-xs text-neutral-500 dark:text-neutral-400">
