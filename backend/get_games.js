@@ -4,7 +4,6 @@ const ChessWebAPI = require("chess-web-api");
 const { Chess } = require("chess.js");
 const { spawn } = require("child_process");
 const path = require("path");
-const USERNAME = "honorable_knight00";
 const LICHESS_API_TOKEN = process.env.LICHESS_API_TOKEN;
 const chessAPI = new ChessWebAPI();
 
@@ -46,43 +45,30 @@ engine.stdin.write("uci\n");
 /* ────────────────────────────────────────────────────────────── */
 
 /* 1) Fetch the most recent Chess.com PGN */
-async function getLatestGamePGN(username) {
-  try {
-    const res = await chessAPI.getPlayerMonthlyArchives(username);
-    const archives = res.body.archives;
-    if (!archives?.length) {
-      console.log("❌ No archives found for:", username);
-      return null;
+async function getLatestGamesPGN(username, gameType, count) {
+  const res = await chessAPI.getPlayerMonthlyArchives(username);
+  const archives = res.body.archives;
+  const matchingGames = [];
+
+  for (let i = archives.length - 1; i >= 0 && matchingGames.length < count; i--) {
+    const archiveUrl = archives[i];
+    const [year, month] = archiveUrl.split("/").slice(-2);
+    const gamesRes = await chessAPI.getPlayerCompleteMonthlyArchives(username, year, month);
+
+    const allGames = gamesRes.body.games;
+    let filtered = allGames.filter((g) => ["bullet", "blitz", "rapid"].includes(g.time_class));
+    if (gameType) filtered = filtered.filter((g) => g.time_class === gameType);
+
+    for (const g of filtered.reverse()) {
+      if (matchingGames.length < count && g.pgn) {
+        matchingGames.push(g.pgn);
+      }
     }
-
-    const latestArchive = archives[archives.length - 1];
-    const [year, month] = latestArchive.split("/").slice(-2);
-    console.log(`📥 Fetching from Chess.com archive: ${year}-${month}`);
-
-    const gamesRes = await chessAPI.getPlayerCompleteMonthlyArchives(
-      username,
-      year,
-      month
-    );
-    let games = gamesRes.body.games;
-    games = games.filter((g) =>
-      ["bullet", "rapid", "blitz"].includes(g.time_class)
-    );
-
-    if (!games?.length) {
-      console.log("❌ No games in that archive.");
-      return null;
-    }
-
-    const latestGame = games[games.length - 1];
-    return typeof latestGame.pgn === "string"
-      ? latestGame.pgn
-      : JSON.stringify(latestGame.pgn);
-  } catch (err) {
-    console.error("❌ Error fetching Chess.com PGN:", err);
-    return null;
   }
+
+  return matchingGames;
 }
+
 
 /* 2) Import that PGN to Lichess & get JSON instead of a standard PGN */
 async function getLichessJsonFromPgn(pgn) {
@@ -231,78 +217,28 @@ async function detectBlundersFromJson(gameJson, username) {
   return { blunders, missedMates };
 }
 
-// /* 5) Main */
-// (async () => {
-//   console.log("📂 Fetching latest Chess.com game PGN...");
-//   const chessComPgn = await getLatestGamePGN(USERNAME);
-//   if (!chessComPgn) {
-//     console.log("❌ No PGN found from Chess.com.");
-//     return;
-//   }
+async function analyzeLatestGames(username, gameType, count) {
+  const pgnList = await getLatestGamesPGN(username, gameType, count);
 
-//   console.log("🔄 Importing PGN to Lichess & retrieving JSON...");
-//   const lichessJson = await getLichessJsonFromPgn(chessComPgn);
-//   if (!lichessJson) {
-//     console.log("❌ Could not get Lichess JSON export.");
-//     return;
-//   }
+  const results = [];
+  for (const pgn of pgnList) {
+    const lichessJson = await getLichessJsonFromPgn(pgn);
+    if (!lichessJson) continue;
 
-//   console.log("🔍 Detecting blunders using local Stockfish on JSON moves...");
-//   const { blunders, missedMates } = await detectBlundersFromJson(lichessJson, USERNAME);
+    const { blunders, missedMates } = await detectBlundersFromJson(
+      lichessJson,
+      username
+    );
 
-//   if (blunders.length === 0) {
-//     console.log("✅ No major blunders detected (≥300 cp).");
-//   } else {
-//     console.log(`🚨 Found ${blunders.length} blunder(s):`);
-//     for (const b of blunders) {
-//       console.log(`Move #${b.moveNumber}: ${b.move}
-//    FEN Before: ${b.fenBefore}
-//    Best Move:  ${b.bestMove}
-//    Drop:       ${b.evalDrop} cp
-// `);
-//     }
-//   }
+    results.push({
+      headers: lichessJson,
+      moves: lichessJson.moves.split(" "),
+      blunders,
+      missedMates,
+    });
+  }
 
-//   if (missedMates.length > 0) {
-//     console.log(`\n🚨 Missed Mates Found (${missedMates.length}):`);
-//     for (const mm of missedMates) {
-//       console.log(`
-//      Move #${mm.moveNumber}: ${mm.move}
-//        FEN Before: ${mm.fenBefore}
-//        Best Move:  ${mm.bestMove}
-//        (You had a forced mate here!)
-//     `);
-//     }
-//   }
-
-//   /* ──────────────────────────────────────────────────────────── */
-//   /*  Cleanly shut down the Stockfish process                     */
-//   /* ──────────────────────────────────────────────────────────── */
-//   engine.stdin.write("quit\n");
-//   engine.kill();
-// })();
-async function analyzeLatestGame(username) {
-  // 1) Fetch PGN
-  const chessComPgn = await getLatestGamePGN(username);
-  if (!chessComPgn) return null;
-
-  // 2) Import to Lichess & get JSON
-  const lichessJson = await getLichessJsonFromPgn(chessComPgn);
-  if (!lichessJson) return null;
-
-  // 3) Detect blunders & missed mates
-  const { blunders, missedMates } = await detectBlundersFromJson(
-    lichessJson,
-    username
-  );
-
-  return {
-    moves: lichessJson.moves.split(" "),
-    blunders,
-    missedMates,
-  };
+  return results;
 }
 
-// analyzeLatestGame(USERNAME).then((data) => console.log(data));
-
-module.exports = { analyzeLatestGame };
+module.exports = { analyzeLatestGames };
