@@ -1,29 +1,29 @@
 import { useState } from "react";
 import { ChevronLeft, ChevronRight, Copy, Repeat } from "lucide-react";
+import SkeletonLoader from "@/components/SkeletonLoader";
 
 function Sidebar({
   blunders,
   missedMates,
   fullMoves,
+  moves,
   ply,
   setPly,
   plyForMove,
-  setOrientation,
-  copyPgn,
 }) {
   const [open, setOpen] = useState(true);
 
   return (
     <aside
       className={`fixed top-18 left-0 h-[calc(100vh-4rem)] z-40 transition-all duration-300 ${
-        open ? "w-96" : "w-12"
+        open ? "w-48 lg:w-80" : "w-12"
       }`}
     >
       {/* Sidebar content */}
-      <div className="h-full bg-purple-200/80 dark:bg-neutral-900/80 backdrop-blur-xl border-r border-neutral-200 dark:border-neutral-700 shadow-lg p-3 flex flex-col gap-4">
+      <div className="h-full bg-green-600/80 dark:bg-neutral-900/80 backdrop-blur-xl border-r border-neutral-200 dark:border-neutral-700 shadow-lg p-3 flex flex-col gap-4">
         {/* Toggle button */}
         <button
-          className="absolute top-4 -right-4 bg-yellow-600 text-white p-1 rounded-full shadow-lg hover:bg-blue-700"
+          className="absolute top-4 -right-4 bg-yellow-600 text-white p-1 rounded-full shadow-lg hover:bg-green-700"
           onClick={() => setOpen(!open)}
         >
           {open ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
@@ -33,8 +33,10 @@ function Sidebar({
           <>
             {/* Blunders Card */}
             <Card title="Blunders" accent="text-red-500">
-              {blunders.length === 0 ? (
-                <EmptyCard text="No blunders yet." />
+              {moves.length === 0 ? (
+                <SkeletonLoader />
+              ) : blunders.length === 0 ? (
+                <EmptyCard text="No blunders found." />
               ) : (
                 <ul className="space-y-2 text-sm">
                   {blunders.map((b) => (
@@ -45,9 +47,7 @@ function Sidebar({
                     >
                       <span className="font-medium">#{b.moveNumber}</span> –{" "}
                       {b.move}{" "}
-                      <span className="text-green-500">
-                        (best: {b.bestMove})
-                      </span>
+                      <span className="text-green-500">({b.bestMove})</span>
                     </li>
                   ))}
                 </ul>
@@ -56,7 +56,9 @@ function Sidebar({
 
             {/* Missed Mates */}
             <Card title="Missed Mates" accent="text-purple-500">
-              {missedMates.length === 0 ? (
+              {moves.length === 0 ? (
+                <SkeletonLoader />
+              ) : missedMates.length === 0 ? (
                 <EmptyCard text="No missed mates." />
               ) : (
                 <ul className="space-y-2 text-sm">
@@ -79,40 +81,44 @@ function Sidebar({
 
             {/* Move list */}
             <Card title="Moves" accent="text-blue-500">
-              <ol className="text-sm space-y-1">
-                {fullMoves.map((m, idx) => (
-                  <li
-                    key={idx}
-                    className="grid grid-cols-[2rem_1fr_1fr] gap-2 items-center"
-                  >
-                    <span className="text-right">{m.no}.</span>
-                    <span
-                      onClick={() => setPly(idx * 2 + 1)}
-                      className={`cursor-pointer px-1 py-0.5 rounded ${
-                        ply === idx * 2 + 1
-                          ? "bg-blue-500 text-white"
-                          : "hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                      }`}
+              {moves.length === 0 ? (
+                <SkeletonLoader />
+              ) : (
+                <ol className="text-sm space-y-1">
+                  {fullMoves.map((m, idx) => (
+                    <li
+                      key={idx}
+                      className="grid grid-cols-[2rem_1fr_1fr] gap-2 items-center"
                     >
-                      {m.w}
-                    </span>
-                    <span
-                      onClick={() => setPly(idx * 2 + 2)}
-                      className={`cursor-pointer px-1 py-0.5 rounded ${
-                        ply === idx * 2 + 2
-                          ? "bg-blue-500 text-white"
-                          : "hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                      }`}
-                    >
-                      {m.b}
-                    </span>
-                  </li>
-                ))}
-              </ol>
+                      <span className="text-right">{m.no}.</span>
+                      <span
+                        onClick={() => setPly(idx * 2 + 1)}
+                        className={`cursor-pointer px-1 py-0.5 rounded ${
+                          ply === idx * 2 + 1
+                            ? "bg-blue-500 text-white"
+                            : "hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                        }`}
+                      >
+                        {m.w}
+                      </span>
+                      <span
+                        onClick={() => setPly(idx * 2 + 2)}
+                        className={`cursor-pointer px-1 py-0.5 rounded ${
+                          ply === idx * 2 + 2
+                            ? "bg-blue-500 text-white"
+                            : "hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                        }`}
+                      >
+                        {m.b}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              )}
             </Card>
 
             {/* Board Controls */}
-            <Card title="Controls" accent="text-neutral-500">
+            {/* <Card title="Controls" accent="text-neutral-500">
               <div className="flex flex-col gap-2">
                 <button
                   onClick={() =>
@@ -131,7 +137,7 @@ function Sidebar({
                   Copy FEN
                 </button>
               </div>
-            </Card>
+            </Card> */}
           </>
         )}
       </div>
@@ -141,8 +147,10 @@ function Sidebar({
 
 function Card({ title, accent = "", children }) {
   return (
-    <div className="rounded-2xl shadow-md bg-white dark:bg-neutral-800 p-3 max-h-60 overflow-y-auto">
-      <h2 className={`text-md font-bold mb-2 border-b pb-1 ${accent}`}>
+    <div className="rounded-sm hover:scale-105 transition-transform shadow-md bg-white dark:bg-neutral-700 p-3 w-full h-40 overflow-y-auto">
+      <h2
+        className={`text-xl text-center h-10 overflow-hidden font-bold mb-2 border-b pb-1 ${accent}`}
+      >
         {title}
       </h2>
       {children}

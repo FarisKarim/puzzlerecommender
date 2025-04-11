@@ -3,6 +3,8 @@ import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import { useMemo } from "react";
 import Sidebar from "./components/Sidebar";
+import { Repeat } from "lucide-react";
+
 import {
   Select,
   SelectContent,
@@ -119,7 +121,7 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen font-roboto flex flex-col bg-gray-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 transition-colors">
+    <div className="min-h-screen font-mono flex flex-col bg-gray-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 transition-colors">
       <nav className="flex items-center justify-between px-6 py-4 shadow-md bg-white dark:bg-neutral-800">
         <h1 className="text-xl font-bold tracking-wide">Blundery</h1>
         <div className="flex items-center gap-3">
@@ -150,7 +152,7 @@ export default function App() {
           />
           <button
             onClick={fetchLatest}
-            className="px-4 py-1 rounded bg-blue-600 text-white hover:bg-blue-700 transition"
+            className="px-4 py-1 rounded font-mono bg-green-600 text-white hover:bg-green-700 transition"
           >
             {loading ? "..." : "Analyze"}
           </button>
@@ -168,6 +170,19 @@ export default function App() {
         <div className="relative w-fit">
           <section className="flex flex-col items-center gap-4">
             <div className="relative">
+              <button
+                onClick={() =>
+                  setOrientation((o) => (o === "white" ? "black" : "white"))
+                }
+                className="absolute top-2 -right-5 z-10 bg-gray-200 dark:bg-neutral-700 p-1 rounded-full hover:bg-gray-300 dark:hover:bg-neutral-600 transition"
+                title="Flip Board"
+              >
+                <Repeat
+                  size={18}
+                  className="text-neutral-700 dark:text-white"
+                />
+              </button>
+
               <div className="absolute -left-3 top-0 h-full w-2 rounded bg-gradient-to-b from-green-500 via-gray-300 to-red-600" />
               <Chessboard
                 id="review-board"
@@ -216,41 +231,40 @@ export default function App() {
             blunders={blunders}
             missedMates={missedMates}
             fullMoves={fullMoves}
+            moves={moves}
             ply={ply}
             setPly={setPly}
             plyForMove={plyForMove}
             setOrientation={setOrientation}
             copyPgn={copyPgn}
           />
-
-         
         </div>
         <div className="flex flex-col justify-start p-2 items-center w-52 gap-1">
-            {gameList.map((g, i) => {
-              const white = g.headers.players?.white?.name ?? "White";
-              const black = g.headers.players?.black?.name ?? "Black";
-              return (
-                <button
-                  key={i}
-                  className={`text-left p-2 w-full hover:scale-105 transition-transform h-14 text-sm rounded-lg border ${
-                    i === selectedGameIndex
-                      ? "bg-orange-600 text-white"
-                      : "bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700"
-                  }`}
-                  onClick={() => {
-                    setSelectedGameIndex(i);
-                    setMoves(g.moves);
-                    setBlunders(g.blunders);
-                    setMissedMates(g.missedMates);
-                    setPly(g.moves.length);
-                    setSandboxGame(null);
-                  }}
-                >
-                  {white} vs {black}
-                </button>
-              );
-            })}
-          </div>
+          {gameList.map((g, i) => {
+            const white = g.headers.players?.white?.name ?? "White";
+            const black = g.headers.players?.black?.name ?? "Black";
+            return (
+              <button
+                key={i}
+                className={`text-left p-2 w-full hover:scale-105 font-mono transition-transform h-14 text-sm rounded-lg border ${
+                  i === selectedGameIndex
+                    ? "bg-orange-600 text-white"
+                    : "bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700"
+                }`}
+                onClick={() => {
+                  setSelectedGameIndex(i);
+                  setMoves(g.moves);
+                  setBlunders(g.blunders);
+                  setMissedMates(g.missedMates);
+                  setPly(g.moves.length);
+                  setSandboxGame(null);
+                }}
+              >
+                {white} vs {black}
+              </button>
+            );
+          })}
+        </div>
       </main>
 
       <footer className="text-center py-4 text-xs text-neutral-500 dark:text-neutral-400">
