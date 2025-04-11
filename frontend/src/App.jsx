@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+
 import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import { useMemo } from "react";
@@ -166,7 +167,7 @@ export default function App() {
         </div>
       </nav>
 
-      <main className="flex-1 flex justify-end p-6 gap-6">
+      <main className="flex-1 flex justify-end border-4 p-6 xl:gap-32">
         <div className="relative w-fit">
           <section className="flex flex-col items-center gap-4">
             <div className="relative">
@@ -203,7 +204,7 @@ export default function App() {
                   return true;
                 }}
                 customBoardStyle={{
-                  borderRadius: "0.5rem",
+                  borderRadius: "0.25rem",
                   boxShadow: dark
                     ? "0 4px 12px rgba(0,0,0,0.5)"
                     : "0 4px 12px rgba(0,0,0,0.1)",
@@ -239,14 +240,15 @@ export default function App() {
             copyPgn={copyPgn}
           />
         </div>
-        <div className="flex flex-col justify-start p-2 items-center w-52 gap-1">
+        <div className="flex flex-col justify-start p-2 items-end w-52 gap-1">
+          <div>Recent Games</div>
           {gameList.map((g, i) => {
             const white = g.headers.players?.white?.name ?? "White";
             const black = g.headers.players?.black?.name ?? "Black";
             return (
               <button
                 key={i}
-                className={`text-left p-2 w-full hover:scale-105 font-mono transition-transform h-14 text-sm rounded-lg border ${
+                className={`text-left p-2 w-full hover:scale-105 font-mono transition-transform text-xs rounded-md border ${
                   i === selectedGameIndex
                     ? "bg-orange-600 text-white"
                     : "bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700"

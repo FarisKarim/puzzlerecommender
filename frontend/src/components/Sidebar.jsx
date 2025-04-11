@@ -16,11 +16,11 @@ function Sidebar({
   return (
     <aside
       className={`fixed top-18 left-0 h-[calc(100vh-4rem)] z-40 transition-all duration-300 ${
-        open ? "w-48 lg:w-80" : "w-12"
+        open ? "w-48 md:w-64 lg:72 xl:w-96" : "w-12"
       }`}
     >
       {/* Sidebar content */}
-      <div className="h-full bg-green-600/80 dark:bg-neutral-900/80 backdrop-blur-xl border-r border-neutral-200 dark:border-neutral-700 shadow-lg p-3 flex flex-col gap-4">
+      <div className="h-full bg-neutral-200 dark:bg-neutral-900/80 backdrop-blur-xl border-r border-neutral-200 dark:border-neutral-700 shadow-lg p-3 flex flex-col gap-4">
         {/* Toggle button */}
         <button
           className="absolute top-4 -right-4 bg-yellow-600 text-white p-1 rounded-full shadow-lg hover:bg-green-700"
@@ -32,7 +32,7 @@ function Sidebar({
         {open && (
           <>
             {/* Blunders Card */}
-            <Card title="Blunders" accent="text-red-500">
+            <Card title="Blunders" accent="text-red-500 dark:text-red-400">
               {moves.length === 0 ? (
                 <SkeletonLoader />
               ) : blunders.length === 0 ? (
@@ -43,11 +43,15 @@ function Sidebar({
                     <li
                       key={b.moveNumber}
                       onClick={() => setPly(plyForMove(b.moveNumber, b.move))}
-                      className="cursor-pointer hover:text-red-400 transition"
+                      className="cursor-pointer flex justify-between hover:text-red-400 transition"
                     >
-                      <span className="font-medium">#{b.moveNumber}</span> –{" "}
-                      {b.move}{" "}
-                      <span className="text-green-500">({b.bestMove})</span>
+                      <div>
+                        <span className="font-medium">#{b.moveNumber}</span> –{" "}
+                        {b.move}{" "}
+                      </div>
+                      <span className="px-2 ml-4 bg-green-600 rounded-md">
+                        {b.bestMove}
+                      </span>
                     </li>
                   ))}
                 </ul>
@@ -66,12 +70,14 @@ function Sidebar({
                     <li
                       key={m.moveNumber}
                       onClick={() => setPly(plyForMove(m.moveNumber, m.move))}
-                      className="cursor-pointer hover:text-purple-400 transition"
+                      className="cursor-pointer flex justify-between hover:text-purple-400 transition"
                     >
-                      <span className="font-medium">#{m.moveNumber}</span> –{" "}
-                      {m.move}{" "}
-                      <span className="text-green-500">
-                        (best: {m.bestMove})
+                      <div>
+                        <span className="font-medium">#{m.moveNumber}</span> –{" "}
+                        {m.move}{" "}
+                      </div>
+                      <span className="px-2 ml-4 bg-green-600 rounded-md">
+                        {m.bestMove}
                       </span>
                     </li>
                   ))}
