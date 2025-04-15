@@ -169,13 +169,20 @@ export default function App() {
 
       <main className="flex-1 flex justify-end border-4 p-6 xl:gap-32">
         <div className="relative w-fit">
-          <section className="flex flex-col items-center gap-4">
+          <section className="flex flex-col items-center gap-2">
+            {gameList.length > 0 && (
+              <div className="text-sm font-semibold text-neutral-600 dark:text-neutral-300 mb-1">
+                {gameList[selectedGameIndex]?.headers?.players?.black?.name ??
+                  "Black"}
+              </div>
+            )}
+
             <div className="relative">
               <button
                 onClick={() =>
                   setOrientation((o) => (o === "white" ? "black" : "white"))
                 }
-                className="absolute top-2 -right-5 z-10 bg-gray-200 dark:bg-neutral-700 p-1 rounded-full hover:bg-gray-300 dark:hover:bg-neutral-600 transition"
+                className="absolute -top-3 -right-5 z-10 bg-gray-200 dark:bg-neutral-700 p-1 rounded-full hover:bg-gray-300 dark:hover:bg-neutral-600 transition"
                 title="Flip Board"
               >
                 <Repeat
@@ -212,7 +219,15 @@ export default function App() {
                 customSquareStyles={customSquareStyles}
               />
             </div>
-            <div className="w-full flex gap-2 justify-center">
+
+            {gameList.length > 0 && (
+              <div className="text-sm font-semibold text-neutral-600 dark:text-neutral-300 mt-1">
+                {gameList[selectedGameIndex]?.headers?.players?.white?.name ??
+                  "White"}
+              </div>
+            )}
+
+            <div className="w-full flex gap-2 justify-center mt-2">
               <button
                 className="flex-1 py-1 rounded bg-gray-200 dark:bg-neutral-700 hover:bg-gray-300 dark:hover:bg-neutral-600"
                 onClick={() => goToPly(Math.max(0, ply - 1))}
@@ -240,15 +255,15 @@ export default function App() {
             copyPgn={copyPgn}
           />
         </div>
-        <div className="flex flex-col justify-start p-2 items-end w-52 gap-1">
-          <div>Recent Games</div>
+        <div className="flex flex-col justify-start p-2 items-center w-52 gap-2">
+          <div>Imported Games</div>
           {gameList.map((g, i) => {
             const white = g.headers.players?.white?.name ?? "White";
             const black = g.headers.players?.black?.name ?? "Black";
             return (
               <button
                 key={i}
-                className={`text-left p-2 w-full hover:scale-105 font-mono transition-transform text-xs rounded-md border ${
+                className={`text-left p-2 h-16 w-full hover:scale-105 font-mono transition-transform text-xs rounded-md border ${
                   i === selectedGameIndex
                     ? "bg-orange-600 text-white"
                     : "bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700"
@@ -262,7 +277,20 @@ export default function App() {
                   setSandboxGame(null);
                 }}
               >
-                {white} vs {black}
+                {white} vs {black}{" "}
+                <span
+                  className={`ml-1 ${
+                    i === selectedGameIndex
+                      ? "text-white"
+                      : "text-neutral-400 dark:text-neutral-300"
+                  }`}
+                >
+                  {g.headers.winner === "white"
+                    ? "(1-0)"
+                    : g.headers.winner === "black"
+                    ? "(0-1)"
+                    : "(½–½)"}
+                </span>
               </button>
             );
           })}
