@@ -122,6 +122,9 @@ function Sidebar({
                 </ol>
               )}
             </Card>
+            <Card title="Recommended Puzzles" accent="text-green-500 dark:text-green-600">
+              <SkeletonLoader />
+            </Card>
 
             {/* Board Controls */}
             {/* <Card title="Controls" accent="text-neutral-500">
