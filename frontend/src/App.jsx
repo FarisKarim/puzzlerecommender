@@ -4,7 +4,18 @@ import { Chessboard } from "react-chessboard";
 import { Chess } from "chess.js";
 import { useMemo } from "react";
 import Sidebar from "./components/Sidebar";
+import { Settings } from "lucide-react";
 import { Repeat } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuShortcut,
+} from "@/components/ui/dropdown-menu";
 
 import {
   Select,
@@ -29,6 +40,7 @@ export default function App() {
   const [gameType, setGameType] = useState("blitz"); // default to blitz
   const [count, setCount] = useState(1);
   const [selectedGameIndex, setSelectedGameIndex] = useState(0);
+  const [theme, setTheme] = useState("default");
 
   const customSquareStyles = useMemo(() => {
     if (ply === 0) return {};
@@ -76,15 +88,34 @@ export default function App() {
   // const lastMove = ply > 0 ? moves[ply - 1] : null;
 
   useEffect(() => {
-    document.documentElement.classList.toggle("dark", dark);
-  }, [dark]);
+    document.documentElement.removeAttribute("data-theme");
+    document.documentElement.classList.toggle("dark", theme === "dark");
+    if (theme !== "dark") {
+      document.documentElement.setAttribute("data-theme", theme);
+    }
+  }, [theme]);
 
   useEffect(() => {
     const handleKeyDown = (e) => {
-      if (e.key === "ArrowLeft") setPly((p) => Math.max(0, p - 1));
-      else if (e.key === "ArrowRight")
+      if (e.key === "ArrowLeft") {
+        setPly((p) => Math.max(0, p - 1));
+      } else if (e.key === "ArrowRight") {
         setPly((p) => Math.min(moves.length, p + 1));
+      } else if (e.metaKey || e.ctrlKey) {
+        const key = e.key.toLowerCase();
+        if (key === "x") {
+          e.preventDefault();
+          setTheme((t) => (t === "dark" ? "" : "dark"));
+        } else if (key === "r") {
+          e.preventDefault();
+          setTheme((t) => (t === "red" ? "" : "red"));
+        } else if (key === "y") {
+          e.preventDefault();
+          setTheme((t) => (t === "yellow" ? "" : "yellow"));
+        }
+      }
     };
+
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [moves.length]);
@@ -122,15 +153,18 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen font-mono flex flex-col bg-gray-50 dark:bg-neutral-900 text-neutral-900 dark:text-neutral-100 transition-colors">
-      <nav className="flex items-center justify-between px-6 py-4 shadow-md bg-white dark:bg-neutral-800">
+    <div
+      data-theme={theme}
+      className="min-h-screen font-mono flex flex-col bg-background text-foreground transition-colors"
+    >
+      <nav className="flex items-center justify-between px-6 py-4 shadow-md transition-colors">
         <h1 className="text-xl font-bold tracking-wide">Blundery</h1>
         <div className="flex items-center gap-3">
           <Select value={gameType} onValueChange={setGameType}>
             <SelectTrigger className="w-[140px]">
               <SelectValue placeholder="Select type" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className={"font-mono"}>
               <SelectItem value="blitz">Blitz</SelectItem>
               <SelectItem value="rapid">Rapid</SelectItem>
               <SelectItem value="bullet">Bullet</SelectItem>
@@ -157,17 +191,51 @@ export default function App() {
           >
             {loading ? "..." : "Analyze"}
           </button>
-          <button
-            onClick={() => setDark(!dark)}
-            className="p-2 rounded-full hover:bg-gray-200 dark:hover:bg-neutral-700 transition"
-            aria-label="toggle theme"
-          >
-            {dark ? "🌞" : "🌙"}
-          </button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="icon" className="p-2">
+                <Settings size={16} className="text-black dark:text-white" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuLabel>Theme</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+
+              <DropdownMenuItem
+                className="font-mono"
+                onClick={() => setTheme("default")}
+              >
+                Default
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="font-mono"
+                onClick={() => setTheme("red")}
+              >
+                Red
+                <DropdownMenuShortcut>⌘R</DropdownMenuShortcut>
+
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="font-mono"
+                onClick={() => setTheme("yellow")}
+              >
+                Yellow
+                <DropdownMenuShortcut>⌘Y</DropdownMenuShortcut>
+
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className="font-mono"
+                onClick={() => setTheme("dark")}
+              >
+                Dark
+                <DropdownMenuShortcut>⌘X</DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </nav>
 
-      <main className="flex-1 flex justify-end border-4 p-6 xl:gap-32">
+      <main className="flex-1 flex justify-end p-6 xl:gap-32">
         <div className="relative w-fit">
           <section className="flex flex-col items-center gap-2">
             {gameList.length > 0 && (
@@ -212,9 +280,7 @@ export default function App() {
                 }}
                 customBoardStyle={{
                   borderRadius: "0.25rem",
-                  boxShadow: dark
-                    ? "0 4px 12px rgba(0,0,0,0.5)"
-                    : "0 4px 12px rgba(0,0,0,0.1)",
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.5)",
                 }}
                 customSquareStyles={customSquareStyles}
               />
@@ -229,13 +295,13 @@ export default function App() {
 
             <div className="w-full flex gap-2 justify-center mt-2">
               <button
-                className="flex-1 py-1 rounded bg-gray-200 dark:bg-neutral-700 hover:bg-gray-300 dark:hover:bg-neutral-600"
+                className="flex-1 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 transition"
                 onClick={() => goToPly(Math.max(0, ply - 1))}
               >
                 ⏮ Prev
               </button>
               <button
-                className="flex-1 py-1 rounded bg-gray-200 dark:bg-neutral-700 hover:bg-gray-300 dark:hover:bg-neutral-600"
+                className="flex-1 py-1 rounded bg-primary text-primary-foreground hover:opacity-90 transition"
                 onClick={() => goToPly(Math.min(moves.length, ply + 1))}
               >
                 Next ⏭
@@ -265,7 +331,7 @@ export default function App() {
                 key={i}
                 className={`text-left p-2 h-16 w-full hover:scale-105 font-mono transition-transform text-xs rounded-md border ${
                   i === selectedGameIndex
-                    ? "bg-orange-600 text-white"
+                    ? "bg-primary text-primary-foreground"
                     : "bg-white dark:bg-neutral-800 hover:bg-neutral-100 dark:hover:bg-neutral-700"
                 }`}
                 onClick={() => {
@@ -298,7 +364,7 @@ export default function App() {
       </main>
 
       <footer className="text-center py-4 text-xs text-neutral-500 dark:text-neutral-400">
-        © {new Date().getFullYear()} Chesser Tracker
+        © {new Date().getFullYear()} Blundery
       </footer>
     </div>
   );

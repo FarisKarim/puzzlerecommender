@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ChevronLeft, ChevronRight, Copy, Repeat } from "lucide-react";
 import SkeletonLoader from "@/components/SkeletonLoader";
 
@@ -13,17 +13,35 @@ function Sidebar({
 }) {
   const [open, setOpen] = useState(true);
 
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "s") {
+        e.preventDefault();
+        setOpen((prev) => !prev);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
   return (
     <aside
-      className={`fixed top-18 left-0 h-[calc(100vh-4rem)] z-40 transition-all duration-300 ${
+      className={`fixed top-17 left-0 h-[calc(100vh-4rem)] z-40 transition-all duration-300 ${
         open ? "w-48 md:w-64 lg:72 xl:w-96" : "w-12"
       }`}
     >
       {/* Sidebar content */}
-      <div className="h-full bg-neutral-200 dark:bg-neutral-900/80 backdrop-blur-xl border-r border-neutral-200 dark:border-neutral-700 shadow-lg p-3 flex flex-col gap-4">
+      <div
+        className="h-full backdrop-blur-xl  shadow-lg p-3 flex flex-col gap-4"
+        style={{
+          backgroundColor: "var(--sidebar)",
+          color: "var(--sidebar-foreground)",
+        }}
+      >
         {/* Toggle button */}
         <button
-          className="absolute top-4 -right-4 bg-yellow-600 text-white p-1 rounded-full shadow-lg hover:bg-green-700"
+          className="absolute -top-1 -right-4 text-black p-1 rounded-full bg-green-400 border shadow-lg hover:bg-green-700"
           onClick={() => setOpen(!open)}
         >
           {open ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
@@ -32,7 +50,7 @@ function Sidebar({
         {open && (
           <>
             {/* Blunders Card */}
-            <Card title="Blunders" accent="text-red-500 dark:text-red-400">
+            <Card title="Blunders" accent="text-red-500  dark:text-red-400">
               {moves.length === 0 ? (
                 <SkeletonLoader />
               ) : blunders.length === 0 ? (
@@ -99,21 +117,29 @@ function Sidebar({
                       <span className="text-right">{m.no}.</span>
                       <span
                         onClick={() => setPly(idx * 2 + 1)}
-                        className={`cursor-pointer px-1 py-0.5 rounded ${
+                        className="cursor-pointer px-1 py-0.5 rounded"
+                        style={
                           ply === idx * 2 + 1
-                            ? "bg-blue-500 text-white"
-                            : "hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                        }`}
+                            ? {
+                                backgroundColor: "var(--primary)",
+                                color: "var(--primary-foreground)",
+                              }
+                            : {}
+                        }
                       >
                         {m.w}
                       </span>
                       <span
                         onClick={() => setPly(idx * 2 + 2)}
-                        className={`cursor-pointer px-1 py-0.5 rounded ${
+                        className="cursor-pointer px-1 py-0.5 rounded"
+                        style={
                           ply === idx * 2 + 2
-                            ? "bg-blue-500 text-white"
-                            : "hover:bg-neutral-200 dark:hover:bg-neutral-700"
-                        }`}
+                            ? {
+                                backgroundColor: "var(--primary)",
+                                color: "var(--primary-foreground)",
+                              }
+                            : {}
+                        }
                       >
                         {m.b}
                       </span>
@@ -122,7 +148,10 @@ function Sidebar({
                 </ol>
               )}
             </Card>
-            <Card title="Recommended Puzzles" accent="text-green-500 dark:text-green-600">
+            <Card
+              title="Recommended Puzzles"
+              accent="text-green-500 dark:text-green-600"
+            >
               <SkeletonLoader />
             </Card>
 
