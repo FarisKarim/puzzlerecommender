@@ -187,9 +187,13 @@ export default function App() {
           />
           <button
             onClick={fetchLatest}
-            className="px-4 py-1 rounded font-mono bg-green-600 text-white hover:bg-green-700 transition"
+            className="px-4 py-1 rounded font-mono bg-background text-white hover:bg-green-700 transition"
           >
-            {loading ? "..." : "Analyze"}
+            {loading ? (
+              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+            ) : (
+              "Analyze"
+            )}
           </button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -213,7 +217,6 @@ export default function App() {
               >
                 Red
                 <DropdownMenuShortcut>⌘R</DropdownMenuShortcut>
-
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="font-mono"
@@ -221,7 +224,6 @@ export default function App() {
               >
                 Yellow
                 <DropdownMenuShortcut>⌘Y</DropdownMenuShortcut>
-
               </DropdownMenuItem>
               <DropdownMenuItem
                 className="font-mono"
