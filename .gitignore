@@ -6,3 +6,5 @@ backend/models/
 backend/.DS_Store
 **/.DS_Store
 backend/notebooks/
+backend/node_modules/
+backend/**/node_modules/
