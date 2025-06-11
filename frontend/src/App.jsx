@@ -34,6 +34,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [orientation, setOrientation] = useState("white");
   const [sandboxGame, setSandboxGame] = useState(null);
+  const [sandboxHistory, setSandboxHistory] = useState([]);
   const [blunders, setBlunders] = useState([]);
   const [missedMates, setMissedMates] = useState([]);
   const [gameList, setGameList] = useState([]);
@@ -67,6 +68,7 @@ export default function App() {
 
   const goToPly = (newPly) => {
     setSandboxGame(null);
+    setSandboxHistory([]);
     setPly(newPly);
   };
 
@@ -98,9 +100,21 @@ export default function App() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === "ArrowLeft") {
-        setPly((p) => Math.max(0, p - 1));
+        if (sandboxGame && sandboxHistory.length > 0) {
+          const newHistory = sandboxHistory.slice(0, -1);
+          setSandboxHistory(newHistory);
+          if (newHistory.length === 0) {
+            setSandboxGame(null);
+          } else {
+            setSandboxGame(new Chess(newHistory[newHistory.length - 1]));
+          }
+        } else {
+          setPly((p) => Math.max(0, p - 1));
+        }
       } else if (e.key === "ArrowRight") {
-        setPly((p) => Math.min(moves.length, p + 1));
+        if (!sandboxGame) {
+          setPly((p) => Math.min(moves.length, p + 1));
+        }
       } else if (e.metaKey || e.ctrlKey) {
         const key = e.key.toLowerCase();
         if (key === "x") {
@@ -118,7 +132,7 @@ export default function App() {
 
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [moves.length]);
+  }, [moves.length, sandboxGame, sandboxHistory]);
 
   function copyPgn() {
     navigator.clipboard.writeText(game.pgn());
@@ -187,7 +201,7 @@ export default function App() {
           />
           <button
             onClick={fetchLatest}
-            className="px-4 py-1 rounded font-mono bg-background text-white hover:bg-green-700 transition"
+            className="px-4 py-1 rounded font-mono bg-sidebar-foreground text-primary-foreground hover:bg-green-700 transition"
           >
             {loading ? (
               <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
@@ -278,6 +292,7 @@ export default function App() {
                   });
                   if (move === null) return false;
                   setSandboxGame(game);
+                  setSandboxHistory(prev => [...prev, game.fen()]);
                   return true;
                 }}
                 customBoardStyle={{
@@ -343,6 +358,7 @@ export default function App() {
                   setMissedMates(g.missedMates);
                   setPly(g.moves.length);
                   setSandboxGame(null);
+                  setSandboxHistory([]);
                 }}
               >
                 {white} vs {black}{" "}
